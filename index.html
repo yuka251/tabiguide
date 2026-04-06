@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>横浜・鎌倉 旅ガイド</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d63384">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="旅ガイド">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  background: #f0f0f5;
+  color: #1a1a2e;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 14px;
+}
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 100%);
+  color: white;
+  border-radius: 18px;
+  padding: 20px 20px 16px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.header::after {
+  content: '❤';
+  position: absolute;
+  right: 18px; top: 14px;
+  font-size: 40px; opacity: 0.12;
+}
+.header h1 { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
+.header p  { font-size: 12px; color: #ffcce8; }
+
+/* DAY TABS */
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.tab {
+  flex: 1; padding: 11px 8px; border: none; border-radius: 13px;
+  font-size: 13px; font-weight: bold; cursor: pointer;
+  font-family: inherit; transition: all 0.2s; letter-spacing: 0.3px;
+}
+.tab-day1 { background: #d63384; color: white; box-shadow: 0 3px 10px rgba(214,51,132,0.35); }
+.tab-day2 { background: #0d9488; color: white; box-shadow: 0 3px 10px rgba(13,148,136,0.35); }
+.tab.inactive { opacity: 0.32; box-shadow: none; transform: scale(0.97); }
+
+/* FILTER PILLS */
+.filters {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.pill {
+  padding: 5px 12px; border-radius: 20px; border: 1.5px solid #ddd;
+  background: white; font-size: 12px; cursor: pointer;
+  font-family: inherit; transition: all 0.15s; color: #444;
+}
+.pill.active { border-color: transparent; color: white; }
+.pill-all.active    { background: #555; }
+.pill-train.active  { background: #1d4ed8; }
+.pill-bus.active    { background: #d97706; }
+.pill-photo.active  { background: #7c3aed; }
+.pill-food.active   { background: #dc2626; }
+.pill-gift.active   { background: #059669; }
+
+/* DAY PANEL */
+.day-panel { display: none; }
+.day-panel.active { display: block; }
+
+/* CARDS */
+.stop-card {
+  background: white;
+  border-radius: 14px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.07);
+  transition: box-shadow 0.2s;
+}
+.stop-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.11); }
+.stop-card.hidden { display: none; }
+
+/* CARD HEADER (clickable) */
+.card-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; cursor: pointer; user-select: none;
+}
+.card-head:hover { background: #fafafa; }
+.time-pill {
+  background: #f3f3f8; border-radius: 8px;
+  padding: 3px 9px; font-size: 12px; font-weight: bold;
+  color: #555; white-space: nowrap; flex-shrink: 0;
+}
+.card-title { font-size: 14px; font-weight: bold; flex: 1; }
+.chevron {
+  font-size: 13px; color: #bbb; transition: transform 0.2s; flex-shrink: 0;
+}
+.card-head.open .chevron { transform: rotate(180deg); }
+
+/* TAG BADGES */
+.tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.tag {
+  font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: bold;
+}
+.tag-train { background: #dbeafe; color: #1d4ed8; }
+.tag-bus   { background: #fef3c7; color: #92400e; }
+.tag-photo { background: #ede9fe; color: #6d28d9; }
+.tag-food  { background: #fee2e2; color: #991b1b; }
+.tag-gift  { background: #d1fae5; color: #065f46; }
+
+/* CARD BODY */
+.card-body { display: none; }
+.card-body.open { display: block; }
+
+/* SECTIONS inside card */
+.section {
+  border-top: 1px solid #f0f0f0;
+  padding: 10px 14px;
+}
+.section-label {
+  font-size: 11px; font-weight: bold; margin-bottom: 7px; display: flex; align-items: center; gap: 5px;
+}
+.label-train  { color: #1d4ed8; }
+.label-bus    { color: #b45309; }
+.label-photo  { color: #7c3aed; }
+.label-food   { color: #dc2626; }
+.label-gift   { color: #059669; }
+
+/* LINK BUTTONS */
+.link-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  background: white; border: 1.5px solid #e0e0f0; border-radius: 10px;
+  padding: 8px 11px; margin-bottom: 6px; text-decoration: none; color: #1a1a2e;
+  transition: background 0.12s;
+}
+.link-btn:last-child { margin-bottom: 0; }
+.link-btn:hover { background: #f0f4ff; }
+.link-left { display: flex; align-items: center; gap: 9px; }
+.link-name { font-size: 13px; font-weight: 500; }
+.link-sub  { font-size: 10.5px; color: #888; margin-top: 1px; }
+.link-arrow { color: #1d4ed8; font-size: 15px; font-weight: bold; flex-shrink: 0; }
+
+/* SPOT / FOOD / GIFT ITEMS */
+.item { display: flex; gap: 9px; align-items: flex-start; margin-bottom: 8px; font-size: 12.5px; line-height: 1.55; }
+.item:last-child { margin-bottom: 0; }
+.item-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* WARN */
+.warn {
+  background: #fffbeb; border-left: 3px solid #f59e0b;
+  border-radius: 0 8px 8px 0; padding: 7px 11px;
+  font-size: 11.5px; color: #78350f; margin: 0 14px 10px;
+}
+
+/* SECTION BG colors */
+.bg-train { background: #eff6ff; }
+.bg-bus   { background: #fffbeb; }
+.bg-photo { background: #fdf4ff; }
+.bg-food  { background: #fff1f2; }
+.bg-gift  { background: #f0fdf4; }
+
+/* MAP */
+.map-wrap { margin-bottom: 12px; }
+.map-toggle {
+  width: 100%; padding: 11px 14px; border: none; border-radius: 13px;
+  font-size: 13px; font-weight: bold; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: all 0.2s;
+}
+.map-toggle-day1 { background: #fce7f3; color: #9d174d; }
+.map-toggle-day2 { background: #ccfbf1; color: #134e4a; }
+.map-toggle:hover { filter: brightness(0.95); }
+.map-toggle .chev { transition: transform 0.2s; }
+.map-toggle.open .chev { transform: rotate(180deg); }
+.map-iframe-wrap { display: none; border-radius: 0 0 13px 13px; overflow: hidden; margin-top: 2px; }
+.map-iframe-wrap.open { display: block; }
+.map-iframe-wrap iframe { width: 100%; height: 420px; border: none; }
+
+
+/* PWA INSTALL BANNER */
+#install-banner {
+  display: none;
+  align-items: center; justify-content: space-between; gap: 10px;
+  background: linear-gradient(135deg, #d63384, #9d174d);
+  color: white; border-radius: 14px;
+  padding: 12px 16px; margin-bottom: 12px;
+  font-size: 13px; font-weight: bold;
+}
+#install-banner button {
+  background: white; color: #9d174d; border: none;
+  border-radius: 8px; padding: 6px 14px; font-size: 13px;
+  font-weight: bold; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+#offline-bar {
+  display: none; text-align: center;
+  background: #f59e0b; color: #78350f;
+  padding: 6px; font-size: 12px; font-weight: bold;
+  border-radius: 8px; margin-bottom: 8px;
+}
+
+</style>
+</head>
+<body>
+
+
+<div id="offline-bar">📵 オフラインモード — キャッシュから表示中</div>
+<div id="install-banner">
+  <span>📱 ホーム画面にアプリとして追加できます</span>
+  <button onclick="installApp()">追加する</button>
+</div>
+
+<div class="header">
+  <h1>✈ 横浜・鎌倉 旅ガイド</h1>
+  <p>東方神起 20th Anniversary LIVE &amp; 鎌倉まつり｜4/25(土)〜4/26(日)</p>
+</div>
+
+<!-- DAY TABS -->
+<div class="tabs">
+  <button class="tab tab-day1" id="tab1" onclick="switchDay(1)">📅 4/25(土) 横浜</button>
+  <button class="tab tab-day2 inactive" id="tab2" onclick="switchDay(2)">📅 4/26(日) 鎌倉</button>
+</div>
+
+<!-- FILTER PILLS -->
+<div class="filters" id="filters">
+  <button class="pill pill-all active" data-filter="all">すべて</button>
+  <button class="pill pill-train" data-filter="train">🚃 電車</button>
+  <button class="pill pill-bus"   data-filter="bus">🚌 バス</button>
+  <button class="pill pill-photo" data-filter="photo">📸 写真</button>
+  <button class="pill pill-food"  data-filter="food">🍜 グルメ</button>
+  <button class="pill pill-gift"  data-filter="gift">🎁 お土産</button>
+</div>
+
+
+<!-- MAP DAY 1 -->
+<div class="map-wrap" id="map-day1">
+  <button class="map-toggle map-toggle-day1" onclick="toggleMap(this)">
+    <span>🗺️ 4/25(土) 横浜ルートマップ</span><span class="chev">▼</span>
+  </button>
+  <div class="map-iframe-wrap">
+    <iframe
+      src="https://www.openstreetmap.org/export/embed.html?bbox=139.600%2C35.440%2C139.660%2C35.520&layer=mapnik&marker=35.4509%2C139.6311"
+      style="width:100%;height:380px;border:none;" loading="lazy">
+    </iframe>
+    <div style="background:#eff6ff;padding:10px 14px;font-size:12px;color:#1d4ed8;display:flex;flex-direction:column;gap:6px;">
+      <div>📍 桜木町駅 → 赤レンガ倉庫 → 中華街 → ハンマーヘッド → 日産スタジアム</div>
+      <a href="https://www.google.com/maps/dir/桜木町駅/横浜赤レンガ倉庫/横浜中華街/横浜ハンマーヘッド/日産スタジアム/@35.47,139.62,13z/data=!4m32!4m31!1m5!1m1!1s0x60185fa227e12be9:0x8b99a99b69a79ac7!2m2!1d139.6310595!2d35.4509136!1m5!1m1!1s0x60185fe8785f47c9:0x9462776ab14e1673!2m2!1d139.6428944!2d35.452632!1m5!1m1!1s0x60185ce2e24c4d53:0xbeb0d548b7d50185!2m2!1d139.6478856!2d35.44401!1m5!1m1!1s0x60185c573540c001:0x3ec45b607e44aaac!2m2!1d139.64181!2d35.45608!1m5!1m1!1s0x6018599ca33ce9f9:0xbc70ba0b05e48228!2m2!1d139.6064006!2d35.5099771!3e2" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:6px;background:#1d4ed8;color:white;padding:9px 14px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:13px;">
+        🗺️ Googleマップでルートを開く
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- MAP DAY 2 -->
+<div class="map-wrap" id="map-day2" style="display:none;">
+  <button class="map-toggle map-toggle-day2" onclick="toggleMap(this)">
+    <span>🗺️ 4/26(日) 鎌倉ルートマップ</span><span class="chev">▼</span>
+  </button>
+  <div class="map-iframe-wrap">
+    <iframe
+      src="https://www.openstreetmap.org/export/embed.html?bbox=139.520%2C35.305%2C139.580%2C35.335&layer=mapnik&marker=35.319%2C139.549"
+      style="width:100%;height:380px;border:none;" loading="lazy">
+    </iframe>
+    <div style="background:#ccfbf1;padding:10px 14px;font-size:12px;color:#134e4a;display:flex;flex-direction:column;gap:6px;">
+      <div>📍 長谷寺 → 鎌倉大仏 → 銭洗弁財天 → 鶴岡八幡宮 → 報国寺（竹の庭）</div>
+      <a href="https://www.google.com/maps/dir/長谷寺+鎌倉/高徳院+鎌倉大仏/銭洗弁財天宇賀福神社/鶴岡八幡宮/報国寺/@35.318,139.548,14z/data=!4m32!4m31!1m5!1m1!1s0x60184504071f2407:0x61eb56a4f4d5eb61!2m2!1d139.5330634!2d35.3124645!1m5!1m1!1s0x601844f24f5b4bcd:0x1edf56bf4abd7fa5!2m2!1d139.53574!2d35.3168145!1m5!1m1!1s0x6018451941b33b1b:0xad576aa62878355d!2m2!1d139.5422058!2d35.3256988!1m5!1m1!1s0x6018458ab87ab4b7:0x83b64aeb69e8e2c2!2m2!1d139.5563462!2d35.3259856!1m5!1m1!1s0x60184042363501eb:0xfdbaa22a8b6b4de5!2m2!1d139.5688742!2d35.3198215!3e2" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:6px;background:#0d9488;color:white;padding:9px 14px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:13px;">
+        🗺️ Googleマップでルートを開く
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ DAY 1 ═══════════ -->
+<div class="day-panel active" id="day1">
+
+  <!-- 羽田→横浜 -->
+  <div class="stop-card" data-tags="train">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">09:00</span>
+      <div><div class="card-title">🚃 羽田空港 → 横浜駅</div>
+        <div class="tags"><span class="tag tag-train">電車</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-train">
+        <div class="section-label label-train">🚃 京急空港線＋京急本線 / 約26分 / 1DAYきっぷ利用</div>
+        <a class="link-btn" href="https://transit.yahoo.co.jp/search/result?from=%E7%BE%BD%E7%94%B0%E7%A9%BA%E6%B8%AF%E7%AC%AC%EF%BC%91%E3%83%BB%E7%AC%AC%EF%BC%92%E3%82%BF%E3%83%BC%E3%83%9F%E3%83%8A%E3%83%AB(%E4%BA%AC%E6%80%A5)&to=%E6%A8%AA%E6%B5%9C" target="_blank">
+          <div class="link-left"><span>🔍</span><div><div class="link-name">Yahoo!乗換案内</div><div class="link-sub">羽田空港第1・2T → 横浜</div></div></div><span class="link-arrow">›</span>
+        </a>
+        <a class="link-btn" href="https://www.navitime.co.jp/diagram/depArrTimeList?departure=00009395&arrival=00000838&line=00000295&updown=0" target="_blank">
+          <div class="link-left"><span>🚆</span><div><div class="link-name">NAVITIME 時刻表</div><div class="link-sub">京急空港線 羽田→横浜</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 横浜→桜木町 -->
+  <div class="stop-card" data-tags="train">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">10:20</span>
+      <div><div class="card-title">🚃 横浜駅 → 桜木町駅</div>
+        <div class="tags"><span class="tag tag-train">電車</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-train">
+        <div class="section-label label-train">🚃 JR京浜東北線 / 1駅・約3分</div>
+        <a class="link-btn" href="https://ekitan.com/timetable/railway/line-station/79-33/d2" target="_blank">
+          <div class="link-left"><span>🔍</span><div><div class="link-name">横浜駅 時刻表（磯子・大船方面）</div><div class="link-sub">JR京浜東北・根岸線 / 駅探</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- あかいくつ①＋赤レンガ -->
+  <div class="stop-card" data-tags="bus photo food">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">10:30</span>
+      <div><div class="card-title">🚌 あかいくつ→ 赤レンガ倉庫 散策</div>
+        <div class="tags"><span class="tag tag-bus">バス</span><span class="tag tag-photo">写真</span><span class="tag tag-food">グルメ</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-bus">
+        <div class="section-label label-bus">🚌 観光周遊バス「あかいくつ」/ 桜木町駅前 4番のりば / 1DAYきっぷ無料</div>
+        <a class="link-btn" href="https://navi.hamabus.city.yokohama.lg.jp/koutuu/pc/diagram/BusDiagram?orvCode=00090408&course=0001601325&stopNo=1" target="_blank">
+          <div class="link-left"><span>🚌</span><div><div class="link-name">横浜市交通局 公式時刻表</div><div class="link-sub">桜木町駅前 → あかいくつ</div></div></div><span class="link-arrow">›</span>
+        </a>
+        <a class="link-btn" href="https://www.city.yokohama.lg.jp/kotsu/bus/norikata/akaikutsu.html" target="_blank">
+          <div class="link-left"><span>ℹ️</span><div><div class="link-name">あかいくつ 公式案内ページ</div><div class="link-sub">ルート・停留所・運賃</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+      <div class="warn">⚠️ 4/25(土)は土休日ダイヤ。約15分間隔で運行。乗車前に時刻を要確認！</div>
+      <div class="section bg-photo">
+        <div class="section-label label-photo">📸 赤レンガ倉庫エリア 写真スポット</div>
+        <div class="item"><span class="item-icon">🧱</span><div><b>赤レンガ倉庫 正面＋広場</b>｜レンガ×石畳でノスタルジックな一枚。花壇と一緒に撮ると◎</div></div>
+        <div class="item"><span class="item-icon">👼</span><div><b>MARINE＆WALK「天使の羽」</b>｜赤レンガ倉庫隣の壁アート。背中に羽を重ねるSNS映えスポット</div></div>
+        <div class="item"><span class="item-icon">🌊</span><div><b>汽車道（海上遊歩道）</b>｜正面にみなとみらいのビル群。風がない日は水面リフレクションも◎</div></div>
+        <div class="item"><span class="item-icon">🐘</span><div><b>象の鼻パーク</b>｜赤レンガ灯台＋ベイブリッジが一枚に収まるフォトスポット</div></div>
+      </div>
+      <div class="section bg-food">
+        <div class="section-label label-food">🍜 赤レンガ倉庫エリア グルメ</div>
+        <div class="item"><span class="item-icon">☕</span><div><b>赤レンガ倉庫 2号館のカフェ・レストラン</b>｜約50店舗。港を眺めながらランチやスイーツを。テラス席がおすすめ</div></div>
+        <div class="item"><span class="item-icon">🍺</span><div><b>横浜ビール（よこはまビール）</b>｜赤レンガ内の地ビールレストラン。横浜限定クラフトビールが飲める</div></div>
+        <div class="item"><span class="item-icon">🥐</span><div><b>ハンマーヘッドのカフェ</b>｜海を3方向から眺める絶景テラス席でコーヒーやスイーツ</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 中華街 ランチ -->
+  <div class="stop-card" data-tags="bus photo food gift">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">12:00</span>
+      <div><div class="card-title">🚌 あかいくつ→ 横浜中華街 ランチ</div>
+        <div class="tags"><span class="tag tag-bus">バス</span><span class="tag tag-photo">写真</span><span class="tag tag-food">グルメ</span><span class="tag tag-gift">お土産</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-bus">
+        <div class="section-label label-bus">🚌 赤レンガ倉庫・M&amp;W停から同じあかいくつに乗車 / 1DAYきっぷ無料</div>
+        <a class="link-btn" href="https://navi.hamabus.city.yokohama.lg.jp/koutuu/pc/diagram/BusDiagram?orvCode=00090390&course=0001601325&stopNo=5" target="_blank">
+          <div class="link-left"><span>🚌</span><div><div class="link-name">赤レンガ倉庫M&amp;W停 時刻表</div><div class="link-sub">横浜市交通局 公式</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+      <div class="section bg-photo">
+        <div class="section-label label-photo">📸 中華街 写真スポット</div>
+        <div class="item"><span class="item-icon">🏮</span><div><b>朝陽門（東門）</b>｜色鮮やかな中華門を正面から。両脇の赤提灯が映える</div></div>
+        <div class="item"><span class="item-icon">🐼</span><div><b>食べ歩きグルメ</b>｜パンダ肉まん・小籠包など。ビジュアル系グルメは歩き中の写真も◎</div></div>
+      </div>
+      <div class="section bg-food">
+        <div class="section-label label-food">🍜 中華街 おすすめグルメ</div>
+        <div class="item"><span class="item-icon">🥟</span><div><b>飲茶・小籠包</b>｜王道のランチ。聘珍樓・萬珍樓など老舗の飲茶が人気。ライブ前のスタミナ補給に◎</div></div>
+        <div class="item"><span class="item-icon">🍢</span><div><b>肉まん・食べ歩き</b>｜江戸清の豚まん（550円）が定番。パンダ肉まんはSNS映えも◎</div></div>
+        <div class="item"><span class="item-icon">🧁</span><div><b>横浜大飯店のごまだんご</b>｜外はカリッ中はもちもち。食べ歩きの定番スイーツ</div></div>
+        <div class="item"><span class="item-icon">🍮</span><div><b>杏仁豆腐・マンゴープリン</b>｜食後のデザートに。店頭販売しているお店も多い</div></div>
+      </div>
+      <div class="section bg-gift">
+        <div class="section-label label-gift">🎁 中華街 お土産</div>
+        <div class="item"><span class="item-icon">🫙</span><div><b>中華系調味料・茶葉</b>｜老舗の中国茶専門店が充実。ジャスミン茶・プーアル茶のセットが人気</div></div>
+        <div class="item"><span class="item-icon">🐼</span><div><b>パンダグッズ</b>｜ぬいぐるみ・マグカップなど中華街オリジナルのパンダグッズが豊富</div></div>
+        <div class="item"><span class="item-icon">🍬</span><div><b>中華菓子・月餅</b>｜老舗の月餅は手土産に最適。個別包装のものは配りやすい</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ハンマーヘッド カフェ -->
+  <div class="stop-card" data-tags="photo food">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">14:00</span>
+      <div><div class="card-title">☕ ハンマーヘッド カフェ休憩</div>
+        <div class="tags"><span class="tag tag-photo">写真</span><span class="tag tag-food">グルメ</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-photo">
+        <div class="section-label label-photo">📸 ハンマーヘッド 写真スポット</div>
+        <div class="item"><span class="item-icon">⚓</span><div><b>ハンマーヘッドクレーン</b>｜1914年建造の歴史的クレーン。海をバックにインダストリアルな一枚</div></div>
+        <div class="item"><span class="item-icon">🌅</span><div><b>テラスからの海景</b>｜3方向が海。みなとみらいのスカイライン＋ベイブリッジが一望</div></div>
+      </div>
+      <div class="section bg-food">
+        <div class="section-label label-food">🍜 ハンマーヘッド グルメ</div>
+        <div class="item"><span class="item-icon">🍦</span><div><b>ソフトクリーム・スイーツ</b>｜テイクアウト可能な軽食が充実。海を眺めながら食べるのが◎</div></div>
+        <div class="item"><span class="item-icon">🍷</span><div><b>テラスカフェ</b>｜海に面したテラス席。ライブ前のリラックスタイムに最適</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 横浜→小机 -->
+  <div class="stop-card" data-tags="train">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">15:30</span>
+      <div><div class="card-title">🚃 横浜駅 → 小机駅（日産スタジアム）</div>
+        <div class="tags"><span class="tag tag-train">電車</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-train">
+        <div class="section-label label-train">🚃 JR横浜線「普通」のみ停車 / 約15分 / 北口から徒歩約8分で西ゲート</div>
+        <a class="link-btn" href="https://ekitan.com/timetable/railway/line-station/73-1/d2" target="_blank">
+          <div class="link-left"><span>🔍</span><div><div class="link-name">横浜駅 JR横浜線 時刻表</div><div class="link-sub">町田・八王子方面 / 駅探</div></div></div><span class="link-arrow">›</span>
+        </a>
+        <a class="link-btn" href="https://transit.yahoo.co.jp/search/result?from=%E6%A8%AA%E6%B5%9C&to=%E5%B0%8F%E6%9C%BA" target="_blank">
+          <div class="link-left"><span>🔍</span><div><div class="link-name">Yahoo!乗換案内</div><div class="link-sub">横浜 → 小机</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+      <div class="warn">⚠️ 快速は小机に停まりません！必ず「普通」に乗ること！</div>
+    </div>
+  </div>
+
+  <!-- ライブ後 小机→長谷 -->
+  <div class="stop-card" data-tags="train">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">21:00</span>
+      <div><div class="card-title">🚃 小机駅 → 長谷駅（宿へ）</div>
+        <div class="tags"><span class="tag tag-train">電車</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-train">
+        <div class="section-label label-train">🚃 JR横浜線 → JR横須賀線 → 江ノ電 / 計約55分</div>
+        <a class="link-btn" href="https://transit.yahoo.co.jp/search/result?from=%E5%B0%8F%E6%9C%BA&to=%E9%95%B7%E8%B0%B7(%E7%A5%9E%E5%A5%88%E5%B7%9D)" target="_blank">
+          <div class="link-left"><span>🔍</span><div><div class="link-name">Yahoo!乗換案内</div><div class="link-sub">小机 → 長谷（神奈川）</div></div></div><span class="link-arrow">›</span>
+        </a>
+        <a class="link-btn" href="https://www.enoden.co.jp/train/station/hase/time-table/" target="_blank">
+          <div class="link-left"><span>🚃</span><div><div class="link-name">江ノ電 長谷駅 時刻表（公式）</div><div class="link-sub">江ノ島電鉄</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+      <div class="warn">⚠️ ライブ後は小机駅・横浜駅が大混雑。時間に余裕を持って行動を。</div>
+    </div>
+  </div>
+
+</div><!-- /day1 -->
+
+<!-- ═══════════ DAY 2 ═══════════ -->
+<div class="day-panel" id="day2">
+
+  <!-- 長谷寺 -->
+  <div class="stop-card" data-tags="photo food">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">08:45</span>
+      <div><div class="card-title">⛩ 長谷寺 参拝</div>
+        <div class="tags"><span class="tag tag-photo">写真</span><span class="tag tag-food">グルメ</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section" style="padding:9px 14px; font-size:11.5px; color:#555; border-top:1px solid #f0f0f0;">
+        長谷駅から徒歩約5分 / 拝観料：大人400円（環境手形で割引）
+      </div>
+      <div class="section bg-photo">
+        <div class="section-label label-photo">📸 長谷寺 写真スポット</div>
+        <div class="item"><span class="item-icon">🌊</span><div><b>眺望散策路からの海景</b>｜高台から由比ヶ浜＋湘南の海が一望。晴れた日は絶景</div></div>
+        <div class="item"><span class="item-icon">🕯️</span><div><b>弁天窟（洞窟内）</b>｜ろうそくの灯りに照らされた幻想的な岩窟。独特の雰囲気が撮れる</div></div>
+        <div class="item"><span class="item-icon">👶</span><div><b>かわいいお地蔵さん</b>｜境内に並ぶ表情豊かなお地蔵さん。接写で表情を切り取って</div></div>
+      </div>
+      <div class="section bg-food">
+        <div class="section-label label-food">🍜 長谷寺 境内グルメ</div>
+        <div class="item"><span class="item-icon">🍵</span><div><b>海光庵（境内の茶屋）</b>｜由比ヶ浜を眺めながら抹茶とお菓子が楽しめる。朝の早い時間帯が空いていておすすめ</div></div>
+        <div class="item"><span class="item-icon">🍡</span><div><b>みたらし団子（門前の屋台）</b>｜参拝後の小腹補給に。鎌倉まつり期間は屋台が出ることも</div></div>
+      </div>
+      <div class="section bg-bus">
+        <div class="section-label label-bus">📍 公式情報</div>
+        <a class="link-btn" href="https://www.hasedera.jp/" target="_blank">
+          <div class="link-left"><span>ℹ️</span><div><div class="link-name">長谷寺 公式サイト</div><div class="link-sub">拝観料・営業時間・混雑情報</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 鎌倉大仏 -->
+  <div class="stop-card" data-tags="photo food">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">09:45</span>
+      <div><div class="card-title">🗿 鎌倉大仏（高徳院）</div>
+        <div class="tags"><span class="tag tag-photo">写真</span><span class="tag tag-food">グルメ</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section" style="padding:9px 14px; font-size:11.5px; color:#555; border-top:1px solid #f0f0f0;">
+        長谷駅から徒歩約10分 / 拝観料：大人300円 / 大仏内部入場は別途20円
+      </div>
+      <div class="section bg-photo">
+        <div class="section-label label-photo">📸 鎌倉大仏 写真スポット</div>
+        <div class="item"><span class="item-icon">🗿</span><div><b>仁王門をくぐった正面</b>｜参道の突き当たりに大仏が現れる瞬間。額縁構図で撮ると◎</div></div>
+        <div class="item"><span class="item-icon">📐</span><div><b>斜め前方の低アングル</b>｜空＋大仏を入れた見上げショット。青空の日は特に映える</div></div>
+        <div class="item"><span class="item-icon">🍵</span><div><b>野点（お茶会）</b>｜鎌倉まつりのイベント。大仏を背景にお茶を楽しむ和の写真が撮れる</div></div>
+      </div>
+      <div class="section bg-food">
+        <div class="section-label label-food">🍜 大仏周辺 グルメ</div>
+        <div class="item"><span class="item-icon">🍦</span><div><b>大仏ソフトクリーム</b>｜近くの売店で販売。大仏をバックに撮る定番インスタショット</div></div>
+        <div class="item"><span class="item-icon">🍵</span><div><b>野点のお抹茶（鎌倉まつり）</b>｜境内で体験できる茶会。風情ある一服をぜひ</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- バス 大仏前→鎌倉駅 -->
+  <div class="stop-card" data-tags="bus">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">10:45</span>
+      <div><div class="card-title">🚌 バス 大仏前 → 鎌倉駅</div>
+        <div class="tags"><span class="tag tag-bus">バス</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-bus">
+        <div class="section-label label-bus">🚌 路線バス / 環境手形で無料 / 約10分</div>
+        <a class="link-btn" href="https://transit.yahoo.co.jp/search/result?from=%E5%A4%A7%E4%BB%8F%E5%89%8D&to=%E9%8E%8C%E5%80%89%E9%A7%85" target="_blank">
+          <div class="link-left"><span>🔍</span><div><div class="link-name">Yahoo!乗換案内</div><div class="link-sub">大仏前バス停 → 鎌倉駅</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 銭洗弁財天 -->
+  <div class="stop-card" data-tags="photo">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">11:15</span>
+      <div><div class="card-title">💰 銭洗弁財天 宇賀福神社</div>
+        <div class="tags"><span class="tag tag-photo">写真</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section" style="padding:9px 14px; font-size:11.5px; color:#555; border-top:1px solid #f0f0f0;">
+        鎌倉駅から徒歩約20分 / 参拝無料（線香・ろうそく代あり）
+      </div>
+      <div class="section bg-photo">
+        <div class="section-label label-photo">📸 銭洗弁財天 写真スポット</div>
+        <div class="item"><span class="item-icon">🕳️</span><div><b>ほら穴のトンネル入り口</b>｜山を削った参道のほら穴。神秘的な雰囲気たっぷり</div></div>
+        <div class="item"><span class="item-icon">💧</span><div><b>奥宮の洞窟＋湧き水</b>｜ろうそくに照らされた洞窟内でお金を洗う幻想的な一枚</div></div>
+        <div class="item"><span class="item-icon">🏮</span><div><b>赤い鳥居と社殿</b>｜木々に囲まれた山間の谷間に突然現れる景観が印象的</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 小町通り -->
+  <div class="stop-card" data-tags="photo food gift">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">12:30</span>
+      <div><div class="card-title">🛍 小町通り ランチ＆お土産</div>
+        <div class="tags"><span class="tag tag-photo">写真</span><span class="tag tag-food">グルメ</span><span class="tag tag-gift">お土産</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-photo">
+        <div class="section-label label-photo">📸 小町通り 写真スポット</div>
+        <div class="item"><span class="item-icon">🐦</span><div><b>鳩サブレーの鎌倉豊島屋本店</b>｜昔ながらの外観が風情あり。購入品と一緒に記念撮影</div></div>
+        <div class="item"><span class="item-icon">🍡</span><div><b>食べ歩きショット</b>｜コロッケ・ソフトクリーム等を持ちながら歩く写真が定番</div></div>
+      </div>
+      <div class="section bg-food">
+        <div class="section-label label-food">🍜 小町通り おすすめグルメ</div>
+        <div class="item"><span class="item-icon">🥩</span><div><b>鎌倉コロッケ（鎌倉コロッケ本舗）</b>｜サクサク揚げたて。50〜100円で食べ歩きの定番</div></div>
+        <div class="item"><span class="item-icon">🍦</span><div><b>鎌倉野菜ソフトクリーム</b>｜地元野菜を使った個性的な味。行列ができる人気店</div></div>
+        <div class="item"><span class="item-icon">🍜</span><div><b>しらす丼（由比ヶ浜エリア）</b>｜鎌倉名物の生しらす＆釜揚げしらす丼。小町通り周辺の食堂で</div></div>
+        <div class="item"><span class="item-icon">🧇</span><div><b>鎌倉プリン</b>｜鎌倉プリン本舗などの手作りプリン。ビン入りでかわいいビジュアルも◎</div></div>
+      </div>
+      <div class="section bg-gift">
+        <div class="section-label label-gift">🎁 小町通り お土産</div>
+        <div class="item"><span class="item-icon">🐿️</span><div><b>クルミッ子（鎌倉紅谷）</b>｜鎌倉土産の最定番。リスのパッケージが可愛い。早めに購入しないと売り切れ注意！</div></div>
+        <div class="item"><span class="item-icon">🐦</span><div><b>鳩サブレー（鎌倉豊島屋）</b>｜鎌倉を代表する伝統菓子。大きな鳩形のバタークッキー</div></div>
+        <div class="item"><span class="item-icon">🍬</span><div><b>鎌倉ハム・鎌倉野菜の加工品</b>｜小町通り周辺で購入可能。食べ比べセットが人気</div></div>
+        <div class="item"><span class="item-icon">🏺</span><div><b>鎌倉彫・陶器</b>｜伝統工芸品。湯飲みや小皿など日常使いできるものがお土産に最適</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 鶴岡八幡宮 -->
+  <div class="stop-card" data-tags="bus photo">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">14:00</span>
+      <div><div class="card-title">⛩ 鶴岡八幡宮 参拝</div>
+        <div class="tags"><span class="tag tag-photo">写真</span><span class="tag tag-bus">バス</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section" style="padding:9px 14px; font-size:11.5px; color:#555; border-top:1px solid #f0f0f0;">
+        小町通りを北へ徒歩約10分 / 参拝無料
+      </div>
+      <div class="section bg-photo">
+        <div class="section-label label-photo">📸 鶴岡八幡宮 写真スポット</div>
+        <div class="item"><span class="item-icon">🌸</span><div><b>段葛（だんかずら）参道</b>｜鎌倉駅から八幡宮まで続く参道。4月は桜並木が続き絶景</div></div>
+        <div class="item"><span class="item-icon">🔴</span><div><b>朱塗りの大石段</b>｜本宮へ続く石段。舞殿を背景に格調ある一枚</div></div>
+        <div class="item"><span class="item-icon">🪷</span><div><b>源氏池・平家池</b>｜池に映る空と社殿のリフレクションが美しい</div></div>
+      </div>
+      <div class="section bg-bus">
+        <div class="section-label label-bus">🚌 次の移動 八幡宮前 → 浄明寺（報国寺へ）/ 環境手形で無料 / 約8分</div>
+        <a class="link-btn" href="https://transit.yahoo.co.jp/search/result?from=%E9%B6%B4%E5%B2%A1%E5%85%AB%E5%B9%A1%E5%AE%AE&to=%E5%A0%B1%E5%9B%BD%E5%AF%BA" target="_blank">
+          <div class="link-left"><span>🔍</span><div><div class="link-name">Yahoo!乗換案内</div><div class="link-sub">鶴岡八幡宮 → 報国寺</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 報国寺 -->
+  <div class="stop-card" data-tags="photo food gift">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">15:00</span>
+      <div><div class="card-title">🎋 報国寺（竹の庭）</div>
+        <div class="tags"><span class="tag tag-photo">写真</span><span class="tag tag-food">グルメ</span><span class="tag tag-gift">お土産</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section" style="padding:9px 14px; font-size:11.5px; color:#555; border-top:1px solid #f0f0f0;">
+        浄明寺バス停から徒歩約3分 / 拝観料：大人300円 / 抹茶は別途500円
+      </div>
+      <div class="section bg-photo">
+        <div class="section-label label-photo">📸 報国寺 写真スポット</div>
+        <div class="item"><span class="item-icon">🎋</span><div><b>竹林の小径（竹の庭）</b>｜高さ10m超の孟宗竹が密生。上を向いて木漏れ日を狙う</div></div>
+        <div class="item"><span class="item-icon">🍵</span><div><b>休耕庵（抹茶処）</b>｜竹林を眺めながらのお抹茶。茶碗＋竹を一緒に収めた写真が人気</div></div>
+        <div class="item"><span class="item-icon">🌿</span><div><b>苔むした石畳の参道</b>｜緑の苔と石畳が風情ある一枚。入り口から奥まで被写体が続く</div></div>
+      </div>
+      <div class="section bg-food">
+        <div class="section-label label-food">🍜 報国寺 グルメ</div>
+        <div class="item"><span class="item-icon">🍵</span><div><b>休耕庵のお抹茶＋お菓子（500円）</b>｜竹林を眺めながら一服。ぜひセットで体験を。抹茶は別途拝観料が必要</div></div>
+      </div>
+      <div class="section bg-gift">
+        <div class="section-label label-gift">🎁 鎌倉エリア 帰り際のお土産まとめ買いに</div>
+        <div class="item"><span class="item-icon">🌿</span><div><b>鎌倉野菜のドレッシング・ジャム</b>｜鎌倉駅周辺の売店で入手可能。軽くて配りやすい</div></div>
+        <div class="item"><span class="item-icon">📿</span><div><b>寺院オリジナルのお守り</b>｜各お寺でオリジナルデザインのお守りあり。長谷寺・鶴岡八幡宮がバリエーション豊富</div></div>
+        <div class="item"><span class="item-icon">📖</span><div><b>御朱印帳</b>｜鎌倉の各寺社でご朱印が集められる。旅の記念にも◎</div></div>
+      </div>
+      <div class="section bg-bus">
+        <div class="section-label label-bus">🚌 次の移動 浄明寺 → 鎌倉駅 / 環境手形で無料 / 約15分</div>
+        <a class="link-btn" href="https://transit.yahoo.co.jp/search/result?from=%E6%B5%84%E6%98%8E%E5%AF%BA&to=%E9%8E%8C%E5%80%89%E9%A7%85" target="_blank">
+          <div class="link-left"><span>🔍</span><div><div class="link-name">Yahoo!乗換案内</div><div class="link-sub">浄明寺 → 鎌倉駅</div></div></div><span class="link-arrow">›</span>
+        </a>
+        <a class="link-btn" href="https://houkokuji.or.jp/" target="_blank">
+          <div class="link-left"><span>ℹ️</span><div><div class="link-name">報国寺 公式サイト</div><div class="link-sub">拝観料・営業時間</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 鎌倉→羽田 -->
+  <div class="stop-card" data-tags="train">
+    <div class="card-head" onclick="toggleCard(this)">
+      <span class="time-pill">17:15</span>
+      <div><div class="card-title">🚃 鎌倉駅 → 羽田空港（帰路）</div>
+        <div class="tags"><span class="tag tag-train">電車</span></div></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="card-body">
+      <div class="section bg-train">
+        <div class="section-label label-train">🚃 JR横須賀線 → 横浜 → 京急本線 / 計約1時間</div>
+        <a class="link-btn" href="https://transit.yahoo.co.jp/search/result?from=%E9%8E%8C%E5%80%89&to=%E7%BE%BD%E7%94%B0%E7%A9%BA%E6%B8%AF%E7%AC%AC%EF%BC%91%E3%83%BB%E7%AC%AC%EF%BC%92%E3%82%BF%E3%83%BC%E3%83%9F%E3%83%8A%E3%83%AB(%E4%BA%AC%E6%80%A5)" target="_blank">
+          <div class="link-left"><span>🔍</span><div><div class="link-name">Yahoo!乗換案内</div><div class="link-sub">鎌倉 → 羽田空港第1・2T</div></div></div><span class="link-arrow">›</span>
+        </a>
+        <a class="link-btn" href="https://ekitan.com/timetable/railway/line-station/114-52/d1" target="_blank">
+          <div class="link-left"><span>🚆</span><div><div class="link-name">鎌倉駅 JR横須賀線 時刻表</div><div class="link-sub">横浜・東京方面 / 駅探</div></div></div><span class="link-arrow">›</span>
+        </a>
+      </div>
+      <div class="warn">⚠️ 18:30羽田着・19:30フライトを逆算して17:15には出発を！</div>
+    </div>
+  </div>
+
+</div><!-- /day2 -->
+
+<div style="text-align:center; font-size:11px; color:#bbb; margin-top:10px; padding-bottom:12px;">
+  東方神起 20th Anniversary ❤ 楽しい旅を！
+</div>
+
+<script>
+// ── 日切り替え ──
+function switchDay(n) {
+  ['day1','day2'].forEach((id, i) => {
+    document.getElementById(id).classList.toggle('active', i === n - 1);
+    document.getElementById('tab' + (i + 1)).classList.toggle('inactive', i !== n - 1);
+  });
+  document.getElementById('map-day1').style.display = n === 1 ? '' : 'none';
+  document.getElementById('map-day2').style.display = n === 2 ? '' : 'none';
+  // フィルターをリセット
+  setFilter('all');
+}
+
+// ── カード開閉 ──
+function toggleCard(head) {
+  const body = head.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  head.classList.toggle('open', !isOpen);
+}
+
+// ── フィルター ──
+let currentFilter = 'all';
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.filter === f);
+  });
+  const panel = document.querySelector('.day-panel.active');
+  panel.querySelectorAll('.stop-card').forEach(card => {
+    const tags = card.dataset.tags || '';
+    const show = f === 'all' || tags.split(' ').includes(f);
+    card.classList.toggle('hidden', !show);
+  });
+}
+
+document.querySelectorAll('.pill').forEach(p => {
+  p.addEventListener('click', () => setFilter(p.dataset.filter));
+});
+
+// フィルターをday切り替え時にも再適用
+const origSwitch = switchDay;
+
+
+// ── Map toggles ──
+function toggleMap(btn) {
+  const wrap = btn.nextElementSibling;
+  const isOpen = wrap.classList.contains('open');
+  wrap.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+}
+
+
+// ── PWA: Service Worker登録 ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('SW registered:', reg.scope);
+    }).catch(err => console.log('SW error:', err));
+  });
+}
+
+// ── PWA: インストールプロンプト ──
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').style.display = 'flex';
+});
+
+function installApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(choice => {
+    if (choice.outcome === 'accepted') {
+      document.getElementById('install-banner').style.display = 'none';
+    }
+    deferredPrompt = null;
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').style.display = 'none';
+});
+
+// ── PWA: オフライン検知 ──
+function updateOnlineStatus() {
+  document.getElementById('offline-bar').style.display =
+    navigator.onLine ? 'none' : 'block';
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+</script>
+</body>
+</html>
